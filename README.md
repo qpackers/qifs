@@ -40,5 +40,5 @@ different order, `bin/sort-qif.pl` is provided.  Sample use:
 ```
 sh$ encode source.qif > encoded.bin
 sh$ decode encoded.bin > result.qif
-sh$ diff <(sort-qif.pl --strip-comments source.qif) <(sort-qif.pl --strip-comments result.qif)
+sh$ diff <(grep -v ^# source.qif) <(sort-qif.pl --strip-comments result.qif)
 ```
