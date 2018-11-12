@@ -7,21 +7,55 @@
 #
 # Usage: sort-qif.pl [--strip-comments] [files]
 
+use strict;
+use warnings;
 use Getopt::Long;
 
-GetOptions("strip-comments" => \$strip_comments);
+my ($strip_comments, $http);
 
-$/ = "\n\n";
+GetOptions(
+    "strip-comments" => \$strip_comments,
+    "http"           => \$http,
+    "help"           => sub {
+        print << "EOT";
+Usage $0 [options] [files]
 
-@chunks = map $$_[1],
-          sort { $$a[0] <=> $$b[0] }
-          map { /^*#\s*stream\s+(\d+)/; [ $1, $_ ] }
-          <>;
+Options:
+  --strip-comments  strips comments
+  --http            moves pseudo headers and content-length to the top of each
+                    header block
+
+EOT
+        exit 0;
+    },
+) or die "error in command line arguments\n";
+
+
+my @chunks = do {
+    local $/ = "\n\n";
+    map { $$_[1] }
+        sort { $$a[0] <=> $$b[0] }
+        map { /^#\s*stream\s+(\d+)/; [ $1 || 0, $_ ] }
+        <>;
+};
 
 if ($strip_comments) {
     for (@chunks) {
         s/^#.*\n//mg;
     }
+}
+
+if ($http) {
+    @chunks = map {
+        my @in = split /\n/, $_;
+        my @out = (
+            (grep { /^#/ } @in),
+            (sort grep { /^:/ } @in),
+            (sort grep { /^content-length\s/ } @in),
+            (grep { !/^(?:#|:|content-length\s|$)/ } @in),
+        );
+        (join "\n", @out) . "\n\n";
+    } @chunks;
 }
 
 print @chunks;
