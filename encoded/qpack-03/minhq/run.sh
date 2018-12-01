@@ -10,6 +10,8 @@ go build github.com/martinthomson/minhq/hc/qif
 
 for q in "${qifs[@]}"; do
     bq="${q##*/}"
+    # Don't bother with the -hq files.
+    [[ "${bq%-hq.qif}" != "$bq" ]] && continue
     echo "$bq:"
     for t in 256 512 4096; do
         for f in 1 3/4 1/2; do
